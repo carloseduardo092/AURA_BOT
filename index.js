@@ -41,17 +41,38 @@ client.on("messageCreate", async (message) => {
 // Função para mostrar XP do usuário
 async function mostrarXp(message) {
   const usuarioId = message.author.id;
-  const usuario = db.get(`usuario_${usuarioId}`);
-  if (!usuario)
-    return message.reply("❌ Você ainda não tem XP. Fale no chat de voz!");
 
-  const { xp, level, titulo } = usuario;
-  const xpProximoNivel = 100 * level ** 2;
+  // Buscar usuário no banco
+  let usuario = await db.get(`usuario_${usuarioId}`);
+
+  // Se não existir, criar com valores iniciais
+  if (!usuario) {
+    usuario = {
+      xp: 0,
+      level: 1,
+      titulo: null,
+    };
+  }
+
+  // Atualizar XP (exemplo: 20 XP por mensagem de texto)
+  usuario.xp = (usuario.xp || 0) + 0.5;
+
+  // Calcular level (pode ajustar fórmula)
+  let xpProximoNivel = 100 * usuario.level ** 2;
+  while (usuario.xp >= xpProximoNivel) {
+    usuario.level += 1;
+    usuario.xp -= xpProximoNivel;
+    xpProximoNivel = 100 * usuario.level ** 2;
+  }
+
+  // Salvar no banco
+  await db.set(`usuario_${usuarioId}`, usuario);
+
   const progressoPercent = Math.min(
-    Math.floor((xp / xpProximoNivel) * 100),
+    Math.floor((usuario.xp / xpProximoNivel) * 100),
     100
   );
-  let progresso = Math.floor((xp / xpProximoNivel) * 10);
+  let progresso = Math.floor((usuario.xp / xpProximoNivel) * 10);
   progresso = Math.max(0, Math.min(progresso, 10));
   const barra = "🟩".repeat(progresso) + "⬜".repeat(10 - progresso);
 
@@ -60,9 +81,17 @@ async function mostrarXp(message) {
     .setTitle("📊 Seu Progresso")
     .setDescription("Veja seus status atuais abaixo:")
     .addFields(
-      { name: "🧬 Nível", value: `${level}`, inline: true },
-      { name: "⭐ XP", value: `${xp} / ${xpProximoNivel}`, inline: true },
-      { name: "🏅 Título", value: titulo || "Sem título ainda", inline: false },
+      { name: "🧬 Nível", value: `${usuario.level}`, inline: true },
+      {
+        name: "⭐ XP",
+        value: `${usuario.xp} / ${xpProximoNivel}`,
+        inline: true,
+      },
+      {
+        name: "🏅 Título",
+        value: usuario.titulo || "Sem título ainda",
+        inline: false,
+      },
       {
         name: "📈 Progresso",
         value: `${barra} (${progressoPercent}%)`,
