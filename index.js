@@ -7,7 +7,7 @@ const JSONdb = require("simple-json-db");
 const db = new JSONdb("./database/database.json");
 
 // Coloque aqui o ID do canal que quer que o bot envie mensagens
-const CANAL_TEXTO_ID = "1340677587328040960";
+const CANAL_TEXTO_ID = process.env.CANAL_TEXTO_ID;
 
 const client = new Client({
   intents: [
